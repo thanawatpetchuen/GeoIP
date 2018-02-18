@@ -26,21 +26,38 @@ def readfile(file):
 #gets a line of string from Log and convert it into Dict Object
 def line2dict(line):
     # Snippet, thanks to http://www.seehuhn.de/blog/52
-    parts = [
-    r'(?P<HOST>\S+)',                   # host %h
-    r'(?P<IDENTITY>\S+)',               # indent %l (unused)
-    r'(?P<USER>\S+)',                   # user %u
-    r'\[(?P<TIME>.+)\]',                # time %t
-    r'"(?P<REQUEST>.+)"',               # request "%r"
-    r'(?P<STATUS>[0-9]+)',              # status %>s
-    r'(?P<SIZE>\S+)',                   # size %b (careful, can be '-')
-    # r'"(?P<REFERER>.*)"',               # referer "%{Referer}i"
-    # r'"(?P<USERAGENT>.*)"',                 # user agent "%{User-agent}i"
-]
-    pattern = re.compile(r'\s+'.join(parts)+r'\s*\Z')
-    m = pattern.match(line)
-    res = m.groupdict()
-    return res
+    try:
+        parts = [
+            r'(?P<HOST>\S+)',                   # host %h
+            r'(?P<IDENTITY>\S+)',               # indent %l (unused)
+            r'(?P<USER>\S+)',                   # user %u
+            r'\[(?P<TIME>.+)\]',                # time %t
+            r'"(?P<REQUEST>.+)"',               # request "%r"
+            r'(?P<STATUS>[0-9]+)',              # status %>s
+            r'(?P<SIZE>\S+)',                   # size %b (careful, can be '-')
+            r'"(?P<REFERER>.*)"',               # referer "%{Referer}i"
+            r'"(?P<USERAGENT>.*)"',                 # user agent "%{User-agent}i"
+        ]
+        pattern = re.compile(r'\s+'.join(parts)+r'\s*\Z')
+        m = pattern.match(line)
+        res = m.groupdict()
+        return res
+    except:
+        parts = [
+            r'(?P<HOST>\S+)',  # host %h
+            r'(?P<IDENTITY>\S+)',  # indent %l (unused)
+            r'(?P<USER>\S+)',  # user %u
+            r'\[(?P<TIME>.+)\]',  # time %t
+            r'"(?P<REQUEST>.+)"',  # request "%r"
+            r'(?P<STATUS>[0-9]+)',  # status %>s
+            r'(?P<SIZE>\S+)',  # size %b (careful, can be '-')
+            # r'"(?P<REFERER>.*)"',  # referer "%{Referer}i"
+            # r'"(?P<USERAGENT>.*)"',  # user agent "%{User-agent}i"
+    ]
+        pattern = re.compile(r'\s+'.join(parts)+r'\s*\Z')
+        m = pattern.match(line)
+        res = m.groupdict()
+        return res
 
 # to get jSon of entire Log
 # returns JSON object

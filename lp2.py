@@ -75,7 +75,7 @@ class LogParse:
                 tstamps = time.mktime(datetime.strptime(tstamp, "%d/%b/%Y").timetuple())
                 tstamp2 = datetime.strptime(tstamp, "%d/%b/%Y")
                 dts = datetime.date(tstamp2)
-                print(type(tstamps), type(tstamp2), tstamp2)
+                # print(type(tstamps), type(tstamp2), tstamp2)
                 if dts <= dp2 and dts >= dp:
                     self.hnt['ip'].append(eachline.get('HOST'))
                     self.hnt['timestamp'].append(str(eachline.get('TIME')).split(':')[0])
