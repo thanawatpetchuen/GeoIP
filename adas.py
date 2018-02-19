@@ -105,8 +105,12 @@ class LogParse:
         dp2 = self.app.getDatePicker("dp2")
         if dp == datetime.today().date() and dp2 == datetime.today().date():
             for eachline in self.hntlist:
-                (self.hnt['ip'].append(eachline.get('HOST')))
-                (self.hnt['timestamp'].append(str(eachline.get('TIME')).split(':')[0]))
+                tstamp = str(eachline.get('TIME')).split(':')[0]
+                tstamp2 = datetime.strptime(tstamp, "%d/%b/%Y")
+
+                (self.hnt['ip'].append([eachline.get('HOST'), str(datetime.timestamp(tstamp2))]))
+                # (self.hnt['timestamp'].append(str(eachline.get('TIME')).split(':')[0]))
+                self.hnt['timestamp'].append(str(datetime.timestamp(tstamp2)))
         else:
             for eachline in self.hntlist:
                 tstamp = str(eachline.get('TIME')).split(':')[0]
@@ -115,15 +119,21 @@ class LogParse:
                 dts = datetime.date(tstamp2)
                 # print(type(tstamps), type(tstamp2), tstamp2)
                 if dts <= dp2 and dts >= dp:
-                    self.hnt['ip'].append(eachline.get('HOST'))
-                    self.hnt['timestamp'].append(str(eachline.get('TIME')).split(':')[0])
+                    self.hnt['ip'].append([eachline.get('HOST'),dts])
+                    # self.hnt['timestamp'].append(str(eachline.get('TIME')).split(':')[0])
+                    self.hnt['timestamp'].append(dts)
 
         for lines in self.hnt['ip']:
-            self.write_ip.write(lines + "\n")
+            self.write_ip.write(lines[0] + "\n")
 
         print(self.hnt['ip'])
         print(self.hnt['timestamp'])
+
+    def count_topten(self):
         self.countip = Counter(self.hnt['ip']).most_common(10)
+        print(self.countip)
+        for ips in self.countip:
+            ipdict = dict(ips)
 
     def md5(self):
         # Write new md5
@@ -140,7 +150,8 @@ class LogParse:
             found = False
             for line in self.rdb:
                 if self.hashmd5 in line and os.path.isfile("{}_coor.txt".format(self.file)) :
-                    return True
+                    if not os.stat("{}_coor.txt".format(self.file)).st_size == 0:
+                        return True
             return False
         except AttributeError:
             self.app.warningBox("WARNING", "Please select file!")
@@ -203,35 +214,70 @@ class LogParse:
         # Select file
         self.file = self.app.openBox("Select")
         self.md5()
+        # print(self.file)
+        
 
     def help(self, btn=None):
         self.app.infoBox("Help", "Select IPs file and click Set or Show if it's currently SET\n"
                                  "OR Write single Ip, multi-Ip in the entry and do the same")
 
     def show(self, btn=None):
-        # Update plot
-        self.coor = "{}_coor.txt".format(self.file)
-        self.ll = []
-        f = open(self.coor, 'r')
-        for line in f:
-            a = line.split()
-            print(a)
-            self.ll.append([a[1], a[2]])
-        f.close()
-        self.app.setBasemap(self.basemaptitle, self.ll)
+        # # Update plot
+        # self.coor = "{}_coor.txt".format(self.file)
+        # self.ll = []
+        # f = open(self.coor, 'r')
+        # for line in f:
+        #     a = line.split()
+        #     print(a)
+        #     self.ll.append([a[1], a[2]])
+        # f.close()
+        # self.app.setBasemap(self.basemaptitle, self.ll)
+        #
+        # if self.check_md5():
+        #     ll = []
+        #     print("No! from show")
+        #     citynum = "{}_outp.txt".format(self.file)
+        #     citynum_file = open(citynum, 'r')
+        #     # print('CItynum', citynum_file)
+        #     for line in citynum_file:
+        #         ll.append(line[:-1])
+        #         # print(line)
+        #     # print(cn, "cn")
+        #     citynum_file.close()
+        #
+        #     dc = dict(Counter(ll))
+        #     print(dc, 'FROM SHOW')
+        #     self.app.addPieChart("p1", dc)
+        #
+            # Update plot
+            self.coor = "{}_coor.txt".format(self.file)
+            self.ll = []
+            f = open(self.coor, 'r')
+            for line in f:
+                a = line.split()
+                print(a)
+                self.ll.append([a[1], a[2]])
+            f.close()
+            self.app.setBasemap(self.basemaptitle, self.ll)
 
-        if self.check_md5():
-            ll = []
-            print("No! from show")
-            citynum = "{}_outp.txt".format(self.file)
-            citynum_file = open(citynum, 'r')
-            for line in citynum_file:
-                ll.append(line[:-1])
-            # print(cn, "cn")
-            citynum_file.close()
+            if self.check_md5():
+                ll = []
+                print("No! from show")
+                citynum = "{}_outp.txt".format(self.file)
+                citynum_file = open(citynum, 'r')
+                for line in citynum_file:
+                    ll.append(line[:-1])
+                # print(cn, "cn")
+                citynum_file.close()
 
-            dc = dict(Counter(ll))
-            self.app.addPieChart("p1", dc)
+                dc = dict(Counter(ll))
+                try:
+                    self.app.addPieChart("p1", dc)
+                    print(dc)
+                except:
+                    self.app.removePieChart("p1")
+                    self.app.addPieChart("p1", dc)
+                    print("Error1")
 
 
     def set(self, btn=None):
@@ -245,12 +291,21 @@ class LogParse:
                 test = open('{}_outp.txt'.format(self.file), 'w+')
                 dp = self.app.getDatePicker("dp")
                 dp2 = self.app.getDatePicker("dp2")
-                print("ssss", list(OrderedDict.fromkeys(self.hnt['ip'])))
+                # print("ssss", list(OrderedDict.fromkeys(self.hnt['ip'])))
+                uniq = []
+                for item in self.hnt['ip']:
+                    if sorted(item) not in uniq:
+                        uniq.append(sorted(item))
+                print(self.hnt['ip'])
                 if self.api == 'http://ip-api.com/json/{}':
-                    for ip in list(OrderedDict.fromkeys(self.hnt['ip'])):
+                    # for ip in list(OrderedDict.fromkeys(self.hnt['ip'][0])):
+                    # for ip in list(OrderedDict.fromkeys(self.hnt['ip'])):
+                    for ip in uniq:
                         # request = requests.get('http://ip-api.com/json/'+ip)
-                        request = requests.get(self.api.format(ip))
-                        print(self.api.format(ip))
+                        # print(ip, times)
+                        request = requests.get(self.api.format(ip[1]))
+                        # print(ip[0], ip[1])
+                        print(self.api.format(ip[1]))
                         # print('https://ipapi.co/{}/json/'.format(ip))
                         request_json = request.json()
 
@@ -261,14 +316,27 @@ class LogParse:
                                 print("{}, {}, {}".format(ip, request_json[self.latfor], request_json[self.lonfor]))
                                 self.country.append(request_json[self.countfor])
                                 self.p.write(
-                                    "{} {} {}\n".format(ip, request_json[self.lonfor], request_json[self.latfor]))
+                                    "{} {} {} {}\n".format(ip[1], request_json[self.lonfor], request_json[self.latfor], ip[0]))
                                 test.write("{}\n".format(request_json[self.countfor]))
                                 self.app.setBasemap(self.basemaptitle,
                                                     [[request_json[self.lonfor], request_json[self.latfor]]])
                         except TypeError:
                             print("TypeError")
 
-                        time.sleep(0.5)
+                        time.sleep(0.41)
+                    citynum = "{}_citnum.txt".format(self.file)
+                    dc = dict(Counter(self.country))
+                    # print(dict(Counter(self.country)))
+                    try:
+                        self.app.addPieChart("p1", dc)
+                    except:
+                        self.app.removePieChart("p1")
+                        self.app.addPieChart("p1", dc)
+                        print(dc, "from except")
+                    dc_str = str(dc)
+                    citynum_file = open(citynum, 'w')
+                    citynum_file.write(dc_str)
+                    citynum_file.close()
                 elif self.api == 'https://ipapi.co/{}/json/':
                     for ip in list(OrderedDict.fromkeys(self.hnt['ip'])):
                         # request = requests.get('http://ip-api.com/json/'+ip)
@@ -289,7 +357,7 @@ class LogParse:
                         except TypeError:
                             print("TypeError")
 
-                        time.sleep(0.5)
+                        time.sleep(0.41)
                 else:
                     for ip in list(OrderedDict.fromkeys(self.hnt['ip'])):
                         # request = requests.get('http://ip-api.com/json/'+ip)
@@ -311,8 +379,8 @@ class LogParse:
                             print("TypeError")
                         except KeyError:
                             print("KeyError")
+                        time.sleep(0.41)
 
-                        time.sleep(0.5)
                 self.p.close()
                 test.close()
                 print("Country", dict(Counter(self.country)))
@@ -329,19 +397,7 @@ class LogParse:
                 citynum_file.write(dc_str)
                 citynum_file.close()
                 self.show()
-            self.coor = "{}_coor.txt".format(self.file)
-            citynum = "{}_citnum.txt".format(self.file)
-            dc = dict(Counter(self.country))
-            # print(dict(Counter(self.country)))
-            try:
-                self.app.addPieChart("p1", dc)
-            except:
-                self.app.removePieChart("p1")
-                self.app.addPieChart("p1", dc)
-            dc_str = str(dc)
-            citynum_file = open(citynum, 'w')
-            citynum_file.write(dc_str)
-            citynum_file.close()
+
 
     def go(self, btn=None):
         # For single IP or Multi Ip input
@@ -351,21 +407,67 @@ class LogParse:
         else:
             ips = ip.split("\n")
             if len(ips) == 1:
+                try:
+                    request = requests.get(self.api.format(ips[0]))
+                    request_json = request.json()
+                    if self.api == 'http://ip-api.com/json/{}':
+                        # try:
+                        if request_json['status'] == 'fail':
+                            pass
+                        else:
+                            self.app.setBasemap(self.basemaptitle, [[request_json[self.lonfor], request_json[self.latfor]]])
 
-                request = requests.get('http://ip-api.com/json/'+ips[0])
-                request_json = request.json()
-                self.app.setLabel("is", "Lat: {} Long: {} Country: {}, City: {}".format(request_json['lat'],
-                                                                                        request_json['lon'], request_json['country'], request_json['city']))
-                self.app.setBasemap(self.basemaptitle, [[request_json['lon'], request_json['lat']]])
+                    elif self.api == 'https://ipapi.co/{}/json/':
+                        if request_json['error']:
+                            pass
+                        else:
+                            self.app.setBasemap(self.basemaptitle, [[request_json[self.lonfor], request_json[self.latfor]]])
+                    else:
+                        self.app.setBasemap(self.basemaptitle, [[request_json[self.lonfor], request_json[self.latfor]]])
+                except KeyError:
+                    print("KeyError")
+                except TypeError:
+                    print("TypeError")
+
             else:
-                for ip in ips:
-                    try:
-                        request = requests.get('http://ip-api.com/json/'+ip)
-                        request_json = request.json()
-                        self.country.append(request_json['country'])
-                        self.app.setBasemap(self.basemaptitle, [[request_json['lon'], request_json['lat']]])
-                    except KeyError:
-                        pass
+                if self.api == 'http://ip-api.com/json/{}':
+                    for ip in ips:
+                        try:
+                            request = requests.get(self.api.format(ip))
+                            request_json = request.json()
+                            if request_json['status'] == 'fail':
+                                pass
+                            else:
+                                # self.country.append(request_json['country'])
+                                self.app.setBasemap(self.basemaptitle, [[request_json[self.lonfor], request_json[self.latfor]]])
+                        except KeyError:
+                            print("KeyError")
+                        except TypeError:
+                            print("TypeError")
+                elif self.api == 'https://ipapi.com/{}/json':
+                    for ip in ips:
+                        try:
+                            request = requests.get(self.api.format(ip))
+                            request_json = request.json()
+                            if request_json['error']:
+                                pass
+                            else:
+                                self.app.setBasemap(self.basemaptitle, [[request_json[self.lonfor], request_json[self.latfor]]])
+                        except KeyError:
+                            print("KeyError")
+                        except TypeError:
+                            print("TypeError")
+                else:
+                    for ip in ips:
+                        try:
+                            request = requests.get(self.api.format(ip))
+                            request_json = request.json()
+                            # self.country.append(request_json['country'])
+                            self.app.setBasemap(self.basemaptitle, [[request_json[self.lonfor], request_json[self.latfor]]])
+                        except KeyError:
+                            print("KeyError")
+                        except TypeError:
+                            print("TypeError")
 
     def run(self):
         self.app.go()
